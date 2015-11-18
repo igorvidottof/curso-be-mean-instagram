@@ -348,7 +348,7 @@ soma(x,y,z);
 
 
 ### 3.5 - Instanciação usando uma IIFE
-Uma `IIFE` (Immediately Invoked Function Expressions) é uma função que, como o próprio nome sugeste, é invocada assim que é definida. Não há muitas diferenças na declaração de uma IIFE se comparada à uma função normal, entretanto quem não está habituado com a sintaxe, à primeira vista achará uma coisa totalmente estranha e doida. 
+Uma `IIFE` (Immediately Invoked Function Expressions) é uma função que, como o próprio nome sugere, é invocada assim que é definida. Não há muitas diferenças na declaração de uma IIFE se comparada à uma função normal, entretanto quem não está habituado com a sintaxe, à primeira vista achará uma coisa totalmente estranha e doida. 
 
 Para declarar uma IIFE o **primeiro passo** é colocar a função dentro de uma expressão, ou seja, entre parentêses.
 #### Função normal
