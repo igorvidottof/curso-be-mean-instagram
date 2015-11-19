@@ -107,7 +107,91 @@ while(cursor.hasNext()){
 }
 ```
 
+## [Aula 03](https://www.youtube.com/watch?v=cIHjA1hyPPY)
+### Conceitos passados
+#### CRUD (Retrieve)
 
+Comando |  Sintaxe  | Descrição
+------- | --------- | ---------
+`db.collection.find()` | `db.collection.find({clausulas}, {campos})` | Retorna um cursor
+`db.collection.findOne()` | `db.collection.findOne({clausulas}, {campos})` | Retorna o objeto direto
 
+> Se comparado com bancos relacionais, as `clausulas` possuem o mesmo efeito do `WHERE` e os `campos` do `SELECT`. Com isso podemos criar objetos `JSON` e passá-los como parâmetros nas buscas.
 
+##### Exemplo
+```
+var query = {name: "Pikachu"}; // aqui descrevemos as restrições de busca
+var fields = {name: 1, description: 1} // aqui os campos que serão retornados
+db.pokemons.find(query, fields);
+```
+
+>```
+{
+  "_id": ObjectId("5648cbeeb2b455d5cd60fd7b"),
+  "name": "Pikachu",
+  "description": "Rato elétrico"
+}
+```
+
+Logo, temos que, para os campos setados com o valor 1 (true) são exibidos e com o valor 0 (false) são omitidos.
+```
+var query = {name: "Pikachu"};
+var fields = {height: 0}; // omitindo apenas o campo height
+db.pokemons.find(query, fields);
+```
+
+>```
+{
+  "_id": ObjectId("5648cbeeb2b455d5cd60fd7b"),
+  "name": "Pikachu",
+  "description": "Rato elétrico",
+  "type": "eletric",
+  "attack": 55
+}
+```
+
+#### Operadores Aritméticos
+Operador | MongoDB
+-------- | -------
+< | `$lt` (less than)
+<= | `$lte` (less than or equal)
+> | `$gt` (greater than)
+>= | `$gte` (greater than or equal)
+
+> Esses operadores devem ser usados dentro de objetos JSON, como no exemplo abaixo.
+
+##### Exemplo
+```
+var query = {attack: {$lt: 50}};
+db.pokemons.find(query);
+```
+> Retorna todos os pokémons com ataque menor que 50
+
+#### Operadores lógicos
+Operador | MongoDB
+-------- | -------
+OR | $or
+NOT OR | $nor
+AND | $and
+
+> Como esses operadores são utilizados para realizar comparações lógicas, os parâmetros de comparação são passados por meio de um array.
+
+##### Exemplo
+```
+var par1 = {type: "elétrico"};
+var par2 = {attack: {$lte: 70}};
+var query = {$and: [par1, par2]};
+db.pokemons.find(query);
+```
+> Retorna todos os pokémons que sejam do `type` elétrico **E** tenham o `attack` menor ou igual à 70.
+
+#### Operador "Existêncial"
+Esse é um operador específico do MongoDB que verifica a existência de determinado campo.
+Sua denotação é `$exists`
+
+##### Exemplo
+```
+db.clientes.find({telefoneResidencial: {$exists: true}});
+```
+> Retorna todos os clientes que possuem o campo `telefoneResidencial`.
 
