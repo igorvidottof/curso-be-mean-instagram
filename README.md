@@ -15,16 +15,29 @@
 			* show dbs
 			* show collections
 		* CRUD (Create)
-			* insert
-			* save
+			* insert()
+			* save()
 		* Exercício [(resolvido)](https://github.com/igorvidottof/curso-be-mean-instagram/tree/master/01-modulo-mongodb/exercicios/aula-02)
 
 	* [Aula 03](https://www.youtube.com/watch?v=cIHjA1hyPPY)
 		* CRUD (Retrieve)
-			* find
-			* findOne
+			* find()
+			* findOne()
 		* Operadores
 			* Aritméticos
 			* Lógicos
 			* "Existêncial"
-		* Exercício (resolvido)
+		* Exercício [(resolvido)](https://github.com/igorvidottof/curso-be-mean-instagram/tree/master/01-modulo-mongodb/exercicios/aula-03)
+
+	* [Aula 04 - Parte 1](https://www.youtube.com/watch?v=ONzJsNbv15U)
+		* CRUD (Update)
+			* update()
+			* Operadores de Modificação
+				* $set
+				* $unset
+				* $inc
+			* Operadores de Array
+				* $push
+				* $pushAll
+				* $pull
+				* $pullAll

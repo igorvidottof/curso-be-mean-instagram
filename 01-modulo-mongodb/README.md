@@ -42,7 +42,7 @@ Partition | Shard
 
 > --db e --collection podem ser simplificados por -d e -c
 
-#### Exercício [(resolvido)](https://github.com/igorvidottof/curso-be-mean-instagram/blob/master/01-modulo-mongodb/exercicios/aula-01/class-01-resolved-igorvidottof-igor-vidotto-felipe.md)
+#### Exercício [(resolvido)](https://github.com/igorvidottof/curso-be-mean-instagram/tree/master/01-modulo-mongodb/exercicios/aula-01)
 
 Realizar o import do documento restaurantes.json para o banco be-mean, coleção restaurantes e contar a quantidade de documentos importados.
 
@@ -62,7 +62,12 @@ show collections | mostra todas as collections da db selecionada
 db.collectionName.insert({dados}) | faz o insert de dados
 db.collectionName.find() | busca todos os dados da collection
 db.createCollection(collectionName, .json) | cria uma collection a partir de um json
-var something = {}  db.collectionName.insert(something) | cria uma variável e depois só passa ela como parâemetro para o insert
+var something = {}  db.collectionName.insert(something) | cria uma variável e depois só passa ela como parâmetro para o insert
+
+
+#### CRUD (Create)
+Função | Descrição
+------- | ---------
 db.insert() | faz a inserção de dados na db
 db.save() | insere caso não exista e faz o update, caso já exista 
 
@@ -106,10 +111,11 @@ while(cursor.hasNext()){
 	print(tojson(cursor.next()))
 }
 ```
+#### Exercício [(resolvido)](https://github.com/igorvidottof/curso-be-mean-instagram/tree/master/01-modulo-mongodb/exercicios/aula-02)
+
 
 ## [Aula 03](https://www.youtube.com/watch?v=cIHjA1hyPPY)
-### Conceitos passados
-#### CRUD (Retrieve)
+### CRUD (Retrieve)
 
 Comando |  Sintaxe  | Descrição
 ------- | --------- | ---------
@@ -194,4 +200,146 @@ Sua denotação é `$exists`
 db.clientes.find({telefoneResidencial: {$exists: true}});
 ```
 > Retorna todos os clientes que possuem o campo `telefoneResidencial`.
+
+#### Exercício [(resolvido)](https://github.com/igorvidottof/curso-be-mean-instagram/tree/master/01-modulo-mongodb/exercicios/aula-03)
+
+## [Aula 04 (parte 1)](https://www.youtube.com/watch?v=ONzJsNbv15U)
+### CRUD (Update)
+Operador | Sintaxe | Descrição
+-------- | ------- | ---------
+`update()` | `db.collection.update(query, mod, options);` | Atualiza os dados dos documentos especificados na query
+
+### Operadores de Modificação
+Para utilização correta da função `update` é necessário fazer a utilização de operadores de modificação, tais como o `$set`, `$unset` e `$inc`
+
+#### $set
+Modifica um valor existente ou cria o campo com o valor caso esse campo não exista
+
+Operador | Sintaxe 
+-------- | ------- 
+`$set` | `{$set: {campo: valor}}`
+
+
+##### Exemplo:
+```
+var query = {name: /charizard/i};
+var mod = {$set: {attack: 99}};
+db.pokemons.update(query, mod);
+```
+> Altera o campo `attack` do Charizard para o valor 99 se ele existir. Caso contrário, esse campo é criado com esse mesmo valor.
+
+#### $unset
+Remove campos de documentos
+
+Operador | Sintaxe 
+-------- | ------- 
+`$unset` | `{$unset: {campo: valor}}`
+
+
+##### Exemplo:
+```
+var query = {name: /charizard/i};
+var mod = {$unset: {attack: 1}};
+db.pokemons.update(query, mod);
+```
+> Remove o campo `attack` do Charizard se ele existir. Caso contrário não faz nada.
+
+#### $inc
+Faz o incremento ou decremento de campos que possuem valores numéricos.
+
+Operador | Sintaxe 
+-------- | ------- 
+`$inc` | `{$inc: {campo: valor}}`
+
+##### Exemplo:
+Incremento:
+```
+var query = {name: /charizard/i};
+var mod = {$inc: {attack: 20}};
+db.pokemons.update(query, mod);
+```
+> Aumenta 20 no `attack` do Charizard se o campo existir.
+
+Decremento:
+```
+var query = {name: /charizard/i};
+var mod = {$inc: {attack: -20}};
+db.pokemons.update(query, mod);
+```
+> Para decrementar basta colocar um número negativo.
+
+### Operadores de Array
+
+Os documentos no MongoDB podem ter arrays de valores também, com isso existem alguns operadores para trabalhar com esses objetos, são eles `$push`, `$pushAll`, `$pull`, `$pullAll`.
+
+#### $push
+Faz a inserção de um valor num array caso ele já exista. Caso contrário, cria um campo de array com o valor especificado.
+
+Operador | Sintaxe 
+-------- | -------
+`$push` | `{$push: {campo: valor}}`
+
+##### Exemplo:
+```
+var query = {name: /charizard/i};
+var mod = {$push: {moves: "Lança Chamas"}};
+db.pokemons.update(query, mod);
+```
+> Insere o "Lança Chamas" no campo de array `moves` do documento com nome Charizard, caso esse campo já exista. Caso contrário, cria esse array.
+
+#### $pushAll
+Tem o mesmo efeito do `$push`, porém com a possibilidade de enviar mais de um valor, com isso é necessário passar um array como valor.
+
+Operador | Sintaxe 
+-------- | -------
+`$pushAll` | `{$pushAll: {campo: [valores]}}`
+
+##### Exemplo:
+
+```
+var query = {name: /charizard/i};
+var attacks = ["Explosão de Chamas", "Investida"];
+var mod = {$pushAll: {moves: attacks}};
+db.pokemons.update(query, mod);
+```
+
+> Insere os valores no campo de array `moves` do documento com nome Charizard, caso esse campo já exista. Caso contrário, cria esse array com os valores que foram passados.
+
+#### $pull
+Exclui um valor de um array caso este exista, senão não faz nada.
+
+Operador | Sintaxe 
+-------- | -------
+`$pull` | `{$pull: {campo: valor}}`
+```
+var query = {name: /charizard/i};
+var mod = {$pull: {moves: "Investida"}};
+db.pokemons.update(query, mod);
+```
+> Exclui o valor "Investida" do campo `moves` do documento Charizard, caso ele exista.
+
+#### $pullAll
+Prmite a exclusão de vários valores de um array de uma única vez.
+
+Operador | Sintaxe 
+-------- | -------
+`$pullAll` | `{$pullAll: {campo: [valores]}}`
+```
+var query = {name: /charizard/i};
+var attacks = ["Investida", "Explosão de Chamas"];
+var mod = {$pullAll: {moves: attacks}};
+db.pokemons.update(query, mod);
+```
+> Exclui os valores "Investida" e "Explosão de Chamas" do campo `moves` do documento Charizard, caso ele exista.
+
+
+
+
+
+
+
+
+
+
+
 
