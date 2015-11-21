@@ -2,7 +2,7 @@
 
 ## Módulos
 
-1. MongoDB
+1. MongoDB [(anotações)](https://github.com/igorvidottof/curso-be-mean-instagram/tree/master/01-modulo-mongodb)
 	* [Aula 01](https://www.youtube.com/watch?v=leYxsEAL_yY)
 		* Teoria
 			* NoSQL
@@ -41,3 +41,25 @@
 				* $pushAll
 				* $pull
 				* $pullAll
+
+	* [Aula 04 - Parte 2](https://www.youtube.com/watch?v=ozbmQb6SVQk)
+		* CRUD (Update)
+			* options
+				* upsert
+					* $setOnInsert
+				* multi
+				* writeConcern
+			* Operadores de Array (contiuação)
+				* $in
+				* $nin
+				* $all
+			* Operadores de Negação
+				* $ne (not Equal)
+				* $not 
+		* CRUD (Delete)
+			* remove()
+			* drop()
+		
+
+
+

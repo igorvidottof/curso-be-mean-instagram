@@ -140,6 +140,7 @@ db.pokemons.find(query, fields);
 ```
 
 Logo, temos que, para os campos setados com o valor 1 (true) são exibidos e com o valor 0 (false) são omitidos.
+
 ```
 var query = {name: "Pikachu"};
 var fields = {height: 0}; // omitindo apenas o campo height
@@ -331,6 +332,186 @@ var mod = {$pullAll: {moves: attacks}};
 db.pokemons.update(query, mod);
 ```
 > Exclui os valores "Investida" e "Explosão de Chamas" do campo `moves` do documento Charizard, caso ele exista.
+
+## [Aula 04 (parte 2)]()
+### CRUD(Update)
+#### options
+A função update contém alguns valores padrões para sua execução, mas que podem ser alterados, São eles:
+```
+{
+  upsert: boolean,
+  multi: boolean,
+  writeConcern: document
+}
+```
+
+#### upsert
+O parâmetro `upsert` serve para caso o documento não seja encontrado pela query. Quando seu valor é true, ele insere o objeto que está sendo passado como modificação.
+
+O `upsert` por padrão é **false**.
+
+```
+var query = {name: /PokemonInexistente/i}
+var options = {upsert: true};
+var mod = {$set: {active: false}};
+db.pokemons.update(query, mod, options);
+```
+> Não existe nenhum documento nessa collection que satisfaça essa query, logo um novo documento é criado com o campo que foi passado como parâmetro de modificação, neste cenário um documento será criado apenas com o campo `"active:" false`.
+
+##### $setOnInsert
+Esse operador é utilizado em conjunto com o upsert. É possível passar valores que serão adicionados caso o upsert aconteça. Além da modificação normal que aconteceria, esses valores também são adicionados a um novo documento.
+
+```
+var query = {name: /PokemonInexistente/i}
+var options = {upsert: true};
+var mod = {
+    $set: {active: true},
+    $setOnInsert: {
+    name: "AindaNaoExisteMon",
+    type: null,
+    attack: null,
+    defense: null,
+    height: null,
+    description: "Sem maiores informações"
+    }
+};
+db.pokemons.update(query, mod, options);
+```
+> Então se a query for encontrada, é executado o **update** normalmente, aplicando a modificação passada no `$set`, do contrário, um novo documento é criado pelo **upsert** com os campos e valores passados no `$setOnInsert`, além dos campos e valores especificados no `$set`.
+
+#### multi
+O MongoDB, por padrão, permite a alteração(update) de apenas **um documento por vez**, no entanto, se for realmente necessário alterar mais de um documento basta alterar o parâmetro `multi` para `true`
+
+```
+var query = {}; // seleciona todos os documentos
+var options = {multi: true};
+var mod = {$set: {active: true}};
+db.pokemons.update(query, mod, options);
+```
+
+> Altera todos os documentos, inserindo ou apenas alterando o campo `active: true`
+
+#### writeConcern
+Definições e Informações sobre [writeConcern](https://docs.mongodb.org/manual/reference/write-concern/) podem ser encontrados na documentação do MongoDB.
+
+### Operadores de Array (continuação)
+#### $in
+O operador `$in` tem a mesma operação que o `$or` tem para trabalhar com documentos. Ele recebe um array de valores e qualquer documento que possua um array com **pelo menos um** desses valores é retornado.
+
+Operador | Sintaxe 
+-------- | ------- 
+$in | {campo: {$in: [valores]}};
+
+
+##### Exemplo
+```
+var query = {moves: {$in: [/choque do trovão/i, /lança chamas/i]}};
+db.pokemons.find(query);
+```
+
+> Retorna todos os pokémons que tenham em seu array de `moves` o choque do trovão **OU** o lança chamas.
+
+#### $nin (not in)
+Operador inverso ao `$in`. Retorna todos os documentos que não possuam nenhum dos valores passados no array.
+
+Operador | Sintaxe 
+-------- | ------- 
+$nin | {campo: {$nin: [valores]}};
+
+##### Exemplo
+```
+var query = {moves: {$in: [/choque do trovão/i, /lança chamas/i]}};
+db.pokemons.find(query);
+```
+
+> Retorna todos os pokémons que **não tenham** o choque do trovão e o lança chamas em seu array de `moves`
+
+#### $all
+O operador `$all` tem a mesma operação que o `$and` tem para trabalhar com documentos. Ele recebe um array de valores e qualquer documento que possua um array com **todos** esses valores é retornado.
+
+Operador | Sintaxe 
+-------- | ------- 
+$all | {campo: {$all: [valores]}};
+
+##### Exemplo
+```
+var query = {moves: {$all: [/choque do trovão/i, /lança chamas/i]}};
+db.pokemons.find(query);
+```
+
+> Neste exemplo nenhum documento é retornado, posto que nenhum pokémon tem em seu array de `moves` o choque do trovão **E** o lança chamas.
+
+
+### Operadores de Negação
+#### $ne (not equal)
+Retorna todos os documentos que possuem o valor **diferente** do valor passado como parâmetro.
+
+Operador | Sintaxe 
+-------- | ------- 
+$ne | {campo: {$ne: valor};
+
+##### Exemplo
+```
+var query = {type: {$ne: "grama"}};
+db.pokemons.find(query);
+```
+
+> Retorna todos os documentos que possuem o campo `type` **diferente** de grama.
+
+**Obs:**
+> O operador `$ne` não aceita `REGEX` como parâmetro.
+
+
+#### $not
+Operador de negação lógica, nega uma verdade. Simplificando, inverte o resultado de uma expressão lógica.
+
+##### Exemplo
+```
+var expressao = {$lte: 80};
+var query = {attack: {$not: expressao}};
+db.pokemons.find(query)
+```
+
+> Retorna todos os documentos que possuam o valor **NÃO menor ou igual a 80**, logicamente, maior que 80.
+
+
+### CRUD (Delete)
+#### remove()
+O `remove`, ao contrário do `update`, permite a remoção de vários documentos ao mesmo tempo por padrão. Tendo em vista esse empecilho é necessário muito cuidado ao passar parâmetros para remoção.
+
+Função | Sintaxe 
+-------- | ------- 
+remove() | db.collection.remove({documento})
+
+##### Exemplo
+```
+var everybody = {};
+db.pokemons.remove(everybody);
+```
+
+> Deleta **todos** os documentos da coleção, mas não a coleção em si.
+
+#### drop()
+Para deletar a coleção então é utilizado a função `drop`
+
+Função | Sintaxe 
+-------- | ------- 
+drop() | db.collection.drop()
+
+
+##### Exemplo
+```
+db.pokemons.drop();
+```
+
+> Deleta a coleção `pokemons`
+
+
+
+
+
+
+
 
 
 
