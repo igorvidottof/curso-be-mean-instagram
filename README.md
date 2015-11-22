@@ -59,6 +59,19 @@
 		* CRUD (Delete)
 			* remove()
 			* drop()
+		* Exercício [(resolvido)](https://github.com/igorvidottof/curso-be-mean-instagram/tree/master/01-modulo-mongodb/exercicios/aula-04)
+
+	* [Aula 05](https://www.youtube.com/watch?v=1eHc8reT_Vk)
+		* Paginação
+			* limit().skip()
+		* Contagem de documentos
+			* count() vs find().length()
+		*Agrupamentos
+			* distinct()
+			* group()
+			* aggregate()
+		* Exercício (resolvido)
+
 		
 
 

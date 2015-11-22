@@ -474,6 +474,8 @@ db.pokemons.find(query)
 
 > Retorna todos os documentos que possuam o valor **NÃO menor ou igual a 80**, logicamente, maior que 80.
 
+Exercício 
+
 
 ### CRUD (Delete)
 #### remove()
@@ -506,7 +508,253 @@ db.pokemons.drop();
 
 > Deleta a coleção `pokemons`
 
+#### Exercício [(resolvido)](https://github.com/igorvidottof/curso-be-mean-instagram/tree/master/01-modulo-mongodb/exercicios/aula-04)
 
+## [Aula 05](https://www.youtube.com/watch?v=1eHc8reT_Vk)
+#### distinct()
+Retorna um array com todos as ocorrências **únicas** de valores de um determinando campo, isto é, não são retornados valores repetidos.
+
+> Tem função idêntica ao `GROUP BY` do SQL
+
+Função | Sintaxe 
+-------- | ------- 
+`distinct()` | `db.collection.distinct("campo");`
+
+
+##### Exemplo:
+```
+db.pokemons.distinct("types");
+```
+> Retorna todos os tipos de pokémons existentes na `db` sem repetição de tipo.
+
+Como o `distinct` retorna um array é possível utilizar a propriedade `length` para verificar quantos valores distintos foram retornados.
+
+##### Exemplo:
+```
+db.pokemons.distinct("types").length;
+```
+
+#### Paginação
+##### limit().skip()
+###### limit()
+
+O `limit()` traz os **N** primeiros documentos encontrados que satisfaçam a query, onde **N** é o parâmetro passado para a função.
+
+##### Exemplo:
+```
+db.pokemons.find( {} , {name: 1, _id: 0} ).limit(2);
+```
+
+> Traz apenas o nome dos dois primeiros pokémons da `db`.
+
+###### skip()
+Pula os N primeiros documentos antes de retornar o resultado da query, sendo que N é o parâmetro passado para a função.
+
+##### Exemplo:
+```
+db.pokemons.find( {} , {name: 1, _id: 0} ).limit(2).skip(1);
+```
+
+> Pula o primeiro documento encontrado e retorna os 2 próximos pelo efeito do `limit(2)`.
+
+
+Com esses conceitos que é definida a **Paginação**.
+
+Paginação nada mais é do que separar o resultado da query em **páginas**, nas quais a quantidade de documentos será definida pelo `limit(N)` e a separação daś páginas pelo `skip(N * X)`, onde **X** se refere ao número da página, a começar por 0.
+
+##### Exemplo:
+
+Primeira Página
+```
+db.pokemons.find( {} , {name: 1, _id: 0} ).limit(5).skip(5 * 0);
+```
+
+Segunda Página
+```
+db.pokemons.find( {} , {name: 1, _id: 0} ).limit(5).skip(5 * 1);
+```
+
+
+#### Contagem de Documentos
+
+##### find().length() vs count()
+
+###### find().length()
+Para fazer a contagens de documentos pode-se ser usado a função `length()`, primeiramente procurando-os com o `find()` e logo em seguida contando-os com o `length()`.
+
+##### Exemplo:
+```
+db.collection.find().length();
+```
+A grande desvantagem desta forma de contagem é que todos os documentos são buscados primeiro, carregados na memória, e somente depois contados um a um, o que pode gerar um certo delay.
+
+
+###### count()
+Com o count a contagem é feita instantaneamente, resultando num tempo de resposta bem menor. O que pode se tornar mais visível em `dbs` com muitos registros.
+
+Função | Sintaxe 
+-------- | ------- 
+`count()` | `db.collection.count({query});`
+
+
+O `count` permite também a realização de contagens de campos e valores específicos, passando um objeto de query como parâmetro para ele, sem necessitar antes de usar o `find`
+
+##### Exemplo:
+```
+db.restaurantes.count( {"borough": "Bronx"} );
+```
+
+> Retorna a quantidade de restaurantes que possuem o campo `"borough"` com o valor `"Bronx"`
+
+#### Agrupamentos
+
+#### group()
+Faz o agrupamento de valores de documentos que possuam algum valor em comum.
+
+Função | Sintaxe 
+-------- | -------
+`group()` | `db.collection.group({propriedades});`
+
+Se fosse necessário contar a quantidade de pokémons por tipo, o `count()` poderia ser utilizado. Todavia para cada tipo distinto seria necessário realizar a operação de count mudando o parâmetro para cada tipo.
+
+Com o `group()` isso se torna bem mais prático.
+
+##### Exemplo:
+```javascript
+db.pokemons.group({
+  initial: {total: 0},
+  reduce: function(curr, result){
+    curr.types.forEach(function(type){
+      if(result[type]){ // se o tipo já existe o array
+        result[type]++;
+      } else{
+        result[type] = 1;
+      }
+      result.total++;
+    });
+  }
+});
+```
+> O `forEach` percorre o array `types` e os tipos são listados dentro de um array e inicializados na primeira vez que um documento possui um tipo ainda não listado. Se o tipo já existir nesse array ele é incrementado pela função `reduce`. O retorno é um array com um documento contendo todos os tipos e suas respectivas quantidades.
+
+Obs:
+
+> O total será maior do que a quantidade de pokémons em si, pois existem pokémons com mais de um tipo.
+
+###### Propriedades do group()
+O group tem algumas propriedades, como as que foram utilizadas acima (`initial` e `reduce`) e algumas outras, como, por exemplo o `cond`, que implica alguma condição de agrupamento.
+
+##### Exemplo:
+
+```javascript
+db.pokemons.group({
+  initial: { total: 0 },
+  cond: { attack: { $gte: 80} },
+  reduce: function(curr, result){
+    curr.types.forEach(function(type){
+      if(result[type]){ // se o tipo já existe o array
+        result[type]++;
+      } else{
+        result[type] = 1;
+      }
+      result.total++;
+    });
+  }
+});
+```
+
+> Retorna todos os tipos de pokémos e suas respectivas quantidades de pokémons que atendem a condição, neste exemplo, attack >= 80.
+
+##### Outros exemplos de `group()`
+
+```javascript
+db.pokemons.group({
+  initial: { total: 0, attack: 0, defense: 0 },
+  reduce: function(current, result){
+    result.total++;
+    result.attack += current.attack;
+    result.defense += current.defense;
+  }
+});
+```
+
+> O `reduce` então itera sobre os documentos, e o `result` tem o papel de acumulador, que recebe o valor atual(`current`) de cada documento.
+
+Outra propriedade do `group()` é o `finalize`, que é executado no final de todas as operações.
+
+##### Exemplo:
+```javascript
+db.pokemons.group({
+  initial: { total: 0, attack: 0, defense: 0 },
+  reduce: function(current, result){
+    result.total++;
+    result.attack += current.attack;
+    result.defense += current.defense;
+  },
+  finalize: function(result){
+    result.attackAvg = result.attack/result.total;
+    result.defenseAvg = result.defense/result.total;
+  }
+});
+```
+
+> Aqui o `finalize` retorna as médias dos ataques e das defesas de todos os pokémons da `db`.
+
+
+#### aggregate()
+Também é utilizado para agrupamentos.
+
+Função | Sintaxe 
+-------- | -------
+`aggregate()` | `db.collection.aggregate({$propriedades});`
+
+
+##### Exemplo
+
+```
+db.pokemons.aggregate({
+  $group: {
+    _id: {}, // id agrupador, especifica algum campo para agrupamento
+    attackAvg: {$avg: "$attack"},
+    defenseAvg: {$avg: "$defense"},
+    attack: {$sum: "$attack"},
+    defense: {$sum: "$defense"},
+    total: {$sum: 1}
+  }
+})
+```
+
+> Retorna um array chamado `result` com a média do attack e da defesa, soma do attack e da defesa de todos os pokémons e quantidade de pokémons.
+
+Obs:
+
+> Todas as propriedades do `aggregate` começam com o operador `$`, como o `$group` e `$avg`. No exemplo acima `$attack` e `$defense` também recebem o `$`, isso porque esse operador indica ao mongo que o este valor é um campo.
+
+
+Para colocar uma condição no aggregate é necessário colocar todas as propriedades dentro de um array e utilizar a propriedade `match` pois ele é um operador de estágio.
+
+Função | Sintaxe 
+-------- | -------
+`aggregate()` | `db.collection.aggregate([{$match}, {$propriedades}]);`
+
+
+```
+db.pokemons.aggregate([
+  {$match: {types: "fire"}},
+  {  
+    $group: {
+      _id: {},
+      attackAvg: {$avg: "$attack"},
+      defenseAvg: {$avg: "$defense"},
+      attack: {$sum: "$attack"},
+      defense: {$sum: "$defense"},
+      total: {$sum: 1}
+  }
+}]);
+```
+
+
+#### Exercício (resolvido)
 
 
 
