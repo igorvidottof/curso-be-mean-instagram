@@ -77,7 +77,7 @@ WriteResult({
 ```
 var attacks = ["Investida", "Lança Chamas"];
 var everybody = {moves: {$all: attacks}};
-db.pokemons.find(todos);
+db.pokemons.find(everybody);
 ```
 
 #### Saída
@@ -405,6 +405,14 @@ db.pokemons.find(query);
 }
 Fetched 10 record(s) in 3ms
 ```
+
+
+#### Com $not (correção)
+```
+var query = {type: {$not: /elétrico/i}};
+db.pokemons.find(query);
+```
+
 
 **7 -** Pesquisar **todos** os pokémons que tenham o ataque `investida` **E** tenham a defesa **não menor ou igual** a 49.
 

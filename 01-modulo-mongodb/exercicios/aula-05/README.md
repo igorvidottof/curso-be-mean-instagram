@@ -242,6 +242,7 @@ db.pokemons.find({}, {name: 1, _id: 0}).limit(5).skip(5 * 2);
 
 > Tendo em vista a resposta correta é necessário aplicar a condição de que somente serão incluídos pokémons com defesa maior que 40. - Igor Vidotto
 
+##### Com Group
 
 ```javascript
 db.pokemons.group({
@@ -287,6 +288,105 @@ db.pokemons.group({
   }
 ]
 ```
+
+##### Com Aggregate (Correção)
+
+```javascript
+db.pokemons.aggregate([
+  { $match: { defense: { $gt: 40 } } },
+  { $unwind: "$types" },
+  { $group: {
+      _id: "$types",
+      count: { $sum: 1 }
+
+    } 
+  }
+]);
+```
+
+##### Saída
+
+>```
+{
+  "result": [
+    {
+      "_id": "ghost",
+      "count": 31
+    },
+    {
+      "_id": "psychic",
+      "count": 55
+    },
+    {
+      "_id": "fairy",
+      "count": 21
+    },
+    {
+      "_id": "dark",
+      "count": 30
+    },
+    {
+      "_id": "ground",
+      "count": 47
+    },
+    {
+      "_id": "grass",
+      "count": 67
+    },
+    {
+      "_id": "electric",
+      "count": 31
+    },
+    {
+      "_id": "steel",
+      "count": 37
+    },
+    {
+      "_id": "flying",
+      "count": 67
+    },
+    {
+      "_id": "rock",
+      "count": 45
+    },
+    {
+      "_id": "normal",
+      "count": 59
+    },
+    {
+      "_id": "fire",
+      "count": 41
+    },
+    {
+      "_id": "ice",
+      "count": 21
+    },
+    {
+      "_id": "bug",
+      "count": 54
+    },
+    {
+      "_id": "poison",
+      "count": 45
+    },
+    {
+      "_id": "dragon",
+      "count": 20
+    },
+    {
+      "_id": "water",
+      "count": 92
+    },
+    {
+      "_id": "fighting",
+      "count": 33
+    }
+  ],
+  "ok": 1
+}
+
+```
+
 
 **6 -** Realizar 3 counts na pokemons: 
 
