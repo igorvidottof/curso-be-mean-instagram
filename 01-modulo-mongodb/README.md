@@ -757,16 +757,92 @@ db.pokemons.aggregate([
 #### Exercício [(resolvido)](https://github.com/igorvidottof/curso-be-mean-instagram/tree/master/01-modulo-mongodb/exercicios/aula-05)
 
 
+## [Aula 06 - Parte 1](https://www.youtube.com/watch?v=5bbWeEEzRQM)
+### Relacionamentos
+#### Forma Manual
+Para fazer relacionamentos no `MongoDB` deve-se simplesmente inserir o `_id` de um objeto de uma coleção noutra. No exemplo, alguns ids da coleção de `pokemons` serão inseridos na coleção `inventario`.
 
+```js
+var pokemons = [
+  {"_id": ObjectId("564dc38c3e726cf185f8809d")},
+  {"_id": ObjectId("5648ce1eb2b455d5cd60fd7d")},
+  {"_id": ObjectId("5648ce1eb2b455d5cd60fd7c")}
+];
+```
 
+> Guardando os ids da collection `pokemons` numa variável para inserção na collection `inventario`.
 
+```js
+var json = {
+  name: "Meus Pokémons",
+  pokemons: pokemons
+}
 
+db.inventario.insert(json);
+```
 
+> Inserção do documento json na collection `inventario`
 
+```js
+db.inventario.findOne();
+```
 
+```
+{
+  "_id": ObjectId("5655cefa2c2514172759ed2e"),
+  "name": "Meus Pokémons",
+  "pokemons": [
+    {
+      "_id": ObjectId("564dc38c3e726cf185f8809d")
+    },
+    {
+      "_id": ObjectId("5648ce1eb2b455d5cd60fd7d")
+    },
+    {
+      "_id": ObjectId("5648ce1eb2b455d5cd60fd7c")
+    }
+  ]
+}
+```
 
+Ok, o documento foi inserido. Todavia, essa collection `inventarios` possui apenas os ids dos pokémons, com isso não sabemos quais os pokémons que estão nesse documento. Logo, para ver seus dados é necessário buscá-los por seus `_id` na collection de origem (`pokemons`) e armazená-los num array para visualização (equivalente ao SELECT).
 
+```js
+var pokemons = [];
+var getPokemon = function(id){
+  pokemons.push( db.pokemons.findOne(id) );
+}
+var invt = db.inventario.findOne();
+invt.pokemons.forEach(getPokemon);
+```
 
+> O objeto `invt` acessa o campo `pokemons` e o `forEach` percorre o array de ids do `inventario`. A cada looping a função `getPokemon` recebe esse id, procura ele no array de origem (`pokemons`) e quando encontra dá um push no array `pokemons` criado anteriormente.
+
+#### DBRef
+
+Outra forma de relacionar documentos é o **DBRef**. 
+
+DBRef é uma convenção para referenciar um documento relacionado, isso inclui:
+
+```
+{
+  $ref: nome da coleção a ser referenciada,
+  $id: o ObjectId do documento referenciado,
+  $db: a database onde a coleção referenciada se encontra
+}
+```
+
+Exemplo:
+
+```js
+{
+  "pokemon" : {
+    "$ref" : "pokemons",
+    "$id" : ObjectId("564220f0613f89ac53a7b5d0"),
+    "$db" : "be-mean-instagram"
+   }
+}
+```
 
 
 

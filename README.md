@@ -72,6 +72,10 @@
 			* aggregate()
 		* Exercício [(resolvido)](https://github.com/igorvidottof/curso-be-mean-instagram/tree/master/01-modulo-mongodb/exercicios/aula-05)
 
+	* [Aula 06 - Parte 1](https://www.youtube.com/watch?v=5bbWeEEzRQM)
+		* Relacionamentos
+			* Forma Manual
+			* DBRef
 	
 
 
