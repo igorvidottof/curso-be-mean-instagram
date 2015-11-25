@@ -70,9 +70,10 @@
 			* distinct()
 			* group()
 			* aggregate()
-		* Exercício (resolvido)
+		* Exercício [(resolvido)](https://github.com/igorvidottof/curso-be-mean-instagram/tree/master/01-modulo-mongodb/exercicios/aula-05)
 
-		
+	
+
 
 
 

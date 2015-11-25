@@ -384,7 +384,6 @@ db.pokemons.aggregate([
   ],
   "ok": 1
 }
-
 ```
 
 
