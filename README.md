@@ -76,7 +76,13 @@
 		* Relacionamentos
 			* Forma Manual
 			* DBRef
-	
+
+	* [Aula 06 - Parte 2](https://www.youtube.com/watch?v=IXz4IL0da1k)
+		* Explain
+		* Index
+		* GridFS
+		* Replica
+		* Exercício [(resolvido)](https://github.com/igorvidottof/curso-be-mean-instagram/tree/master/01-modulo-mongodb/exercicios/aula-06)
 
 
 

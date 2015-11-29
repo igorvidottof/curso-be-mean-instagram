@@ -738,7 +738,7 @@ Função | Sintaxe
 `aggregate()` | `db.collection.aggregate([{$match}, {$propriedades}]);`
 
 
-```
+```js
 db.pokemons.aggregate([
   {$match: {types: "fire"}},
   {  
@@ -845,6 +845,394 @@ Exemplo:
 ```
 
 
+## [Aula 06 - Parte 2](https://www.youtube.com/watch?v=IXz4IL0da1k)
+### Explain
 
+O `explain` mostra como o MongoDB executa as `queries` internamente, exibindo as informações e os parâmetros utilizados para realização dessa `query`.
 
+```js
+db.restaurantes.find( {name: "Morris Park Bake Shop" }).explain();
+```
 
+##### Saída
+
+```js
+{
+  "queryPlanner": {
+    "plannerVersion": 1,
+    "namespace": "be-mean.restaurantes",
+    "indexFilterSet": false,
+    "parsedQuery": {
+      "name": {
+        "$eq": "Morris Park Bake Shop"
+      }
+    },
+    "winningPlan": {
+      "stage": "COLLSCAN",
+      "filter": {
+        "name": {
+          "$eq": "Morris Park Bake Shop"
+        }
+      },
+      "direction": "forward"
+    },
+    "rejectedPlans": [ ]
+  },
+  "serverInfo": {
+    "host": "igorpc",
+    "port": 27017,
+    "version": "3.0.7",
+    "gitVersion": "6ce7cbe8c6b899552dadd907604559806aa2e9bd"
+  },
+  "ok": 1
+}
+```
+
+É possível ainda, passar parâmetros adicionais para o `explain` para que ele traga mais algumas informações. Um parâmetro que podemos passar é o `executionStats`.
+
+```js
+db.restaurantes.find( {name: "Morris Park Bake Shop" } ).explain("executionStats");
+```
+
+Então obtemos, além das informações padrões trazidas pelo `explain`, o campo `executionStats`:
+
+```js
+"executionStats": {
+    "executionSuccess": true,
+    "nReturned": 1,
+    "executionTimeMillis": 30,
+    "totalKeysExamined": 0,
+    "totalDocsExamined": 25359,
+    "executionStages": {
+      "stage": "COLLSCAN",
+      "filter": {
+        "name": {
+          "$eq": "Morris Park Bake Shop"
+        }
+      },
+      "nReturned": 1,
+      "executionTimeMillisEstimate": 30,
+      "works": 25361,
+      "advanced": 1,
+      "needTime": 25359,
+      "needFetch": 0,
+      "saveState": 198,
+      "restoreState": 198,
+      "isEOF": 1,
+      "invalidates": 0,
+      "direction": "forward",
+      "docsExamined": 25359
+    }
+  },
+```
+
+#### Mas por que utilizar o `explain`?
+
+Como ele traz várias informações sobre a `query`, podemos tirar proveito delas e verificar se há alguma possibilidade de melhora, tanto na forma de escrever a `query` quanto como na adição de **índices**.
+
+> Neste exemplo vemos que a execução retornou o documento em `30ms` e que todos os documentos da `collection` foram examinados.
+
+```js
+"executionTimeMillis": 30,
+"totalDocsExamined": 25359,
+```
+
+### Index
+
+É uma forma de garantir que informações importantes ou que são frequentemente acessadas retornem de uma maneira mais rápida do que a convencional.
+
+Vamos verificar se essa `collection` *restaurantes* já possui algum índice:
+
+```js
+db.restarantes.getIndexes();
+
+```
+
+##### Saída
+
+```js
+[
+  {
+    "v": 1,
+    "key": {
+      "_id": 1
+    },
+    "name": "_id_",
+    "ns": "be-mean.restaurantes"
+  }
+```
+
+> O MongoDB cria um índice padrão na criação de uma `collection`, o chamado `Object Id`. 
+
+Vamos trazer o mesmo documento que trouxemos no último exemplo, porém utilizando esse índice.
+
+```js
+db.restaurantes.find( {ObjectId("5650d036dd3bb10f0d34c443")} ).explain("executionStats");
+```
+
+##### Saída
+
+```js
+{
+  "queryPlanner": {
+    "plannerVersion": 1,
+    "namespace": "be-mean.restaurantes",
+    "indexFilterSet": false,
+    "parsedQuery": {
+      "_id": {
+        "$eq": ObjectId("5650d036dd3bb10f0d34c443")
+      }
+    },
+    "winningPlan": {
+      "stage": "IDHACK"
+    },
+    "rejectedPlans": [ ]
+  },
+  "executionStats": {
+    "executionSuccess": true,
+    "nReturned": 1,
+    "executionTimeMillis": 0,
+    "totalKeysExamined": 1,
+    "totalDocsExamined": 1,
+    "executionStages": {
+      "stage": "IDHACK",
+      "nReturned": 1,
+      "executionTimeMillisEstimate": 0,
+      "works": 2,
+      "advanced": 1,
+      "needTime": 0,
+      "needFetch": 0,
+      "saveState": 0,
+      "restoreState": 0,
+      "isEOF": 1,
+      "invalidates": 0,
+      "keysExamined": 1,
+      "docsExamined": 1
+    }
+  },
+  "serverInfo": {
+    "host": "igorpc",
+    "port": 27017,
+    "version": "3.0.7",
+    "gitVersion": "6ce7cbe8c6b899552dadd907604559806aa2e9bd"
+  },
+  "ok": 1
+}
+```
+
+Agora temos o tempo de retorno de **0ms** e apenas **um** documento examinado, isto é, apenas o índice.
+
+```js
+"executionTimeMillis": 0,
+"totalDocsExamined": 1,
+```
+
+#### Como criar um Index?
+
+Criamos um `índice` através da função `createIndex( {campo: ordem} )`, onde `ordem` refere-se a ordenação natural(**1**) ou inversa(**-1**), tanto alfabeticamente quanto numérica.
+
+```js
+db.restaurantes.createIndex( {name: 1} );
+```
+
+##### Saída
+
+```js
+{
+  "createdCollectionAutomatically": false,
+  "numIndexesBefore": 1,
+  "numIndexesAfter": 2,
+  "ok": 1
+}
+```
+
+Agora vamos testar o índice com o mesmo exemplo que fizemos buscando o restaurante pelo nome.
+
+```js
+db.restaurantes.find( {name: "Morris Park Bake Shop"} ).explain("executionStats").executionStats.executionTimeMillis;
+```
+
+> 0ms
+
+```js
+db.restaurantes.find( {name: "Morris Park Bake Shop"} ).explain("executionStats").executionStats.totalDocsExamined;
+```
+
+> 1 índice.
+
+#### Como deletar um Index
+
+Exatamente da maneira que ele foi criado, porém agora com a função `dropIndex()`
+
+```js
+db.restaurantes.dropIndex( {name: 1} );
+```
+
+##### Saída
+
+```js
+{
+  "nIndexesWas": 2,
+  "ok": 1
+}
+```
+
+#### Observação
+
+Índices melhoram muito a velocidade de `queries` e `updates` porém eles aumentam o peso e o número de operações da `database`, portanto devem ser criados apenas quando realmente são necessários.
+
+Uma dica é criar **índices compostos**, com mais de um campo, com isso, além de a `query` ser mais precisa e assertiva ela será bem rápida.
+
+### [GridFS](https://docs.mongodb.org/manual/core/gridfs/)
+GridFS é o sistema de arquivos do MongoDB, o qual faz o armazenamento de arquivos binários que excedam o tamanho do documento **BSON** de 16Mb em *chunks* de 255kb cada, sendo que podemos acessar essas partes sem carregar o arquivo inteiro na memória.
+
+Não é possível fazer alterações e atualizações em todo o arquivo automaticamente, para isso é necessário criar e salvar uma nova versão, com isso podemos verificar a versão mais atual do arquivo pelo campo `uploadDate` e deletar os anteriores, se preferir.
+
+#### Sintaxe
+```js
+mongofiles -h <host> -d <nome_db> put <arquivo>
+```
+
+#### Exemplo
+
+```
+mongofiles -h 127.0.0.1 -d be-mean-files put ~/Desktop/Os_Raios_do_Pikachu.mp4 
+2015-11-29T12:40:49.037-0200  connected to: 127.0.0.1
+added file: /home/igor/Desktop/Os_Raios_do_Pikachu.mp4
+```
+
+Quando salvamos um arquivo no GridFS duas coleções são criadas a `fs.chunks` e a `fs.files`.
+#### fs.chunks
+Na coleção `fs.chunks` fica o arquivo binário divido em pequenas partes, chamadas de `chunks`, cada `chunk` é um documento contendo 255KB de dados seguindo essa estrutura:
+
+```js
+{
+  "_id" : <ObjectId>, // id da chunk
+  "files_id" : <ObjectId>, // mantém relacionamento com o fs.files
+  "n" : <num>, // índice da chunk no arquivo
+  "data" : <binary> // dados binários
+}
+```
+
+#### fs.files
+Onde são armazenados os metadados do arquivo, como:
+
+```js
+{
+  "_id" : <ObjectId>, // id que é referenciado em cada chunk no campo files_id
+  "length" : <num>, // tamanho total do arquivo em bytes
+  "chunkSize" : <num>, // tamanho dos chunks
+  "uploadDate" : <timestamp>, // quando o arquivo foi criado
+  "md5" : <hash>, // gerado a partir do conteúdo deste arquivo
+  "filename" : <string>, // nome do arquivo inserido
+}
+```
+
+> Se fizermos uma `query` pelo `md5` e encontramos mais de um documento, significa que temos documentos idênticos salvos no GridFS, com isso podemos decidir o que fazer com estes arquivos.
+
+#### Dica
+Se for usar GridFS, utilize-o em um servidor próprio (diferente do `mongod`) para configurá-lo da melhor maneira possível.
+
+### Replica
+A Replica é um recurso muito importante que **devemos** utilizar em todos os projetos. Ela faz o espelhamento dos dados de um servidor para outro, no MongoDB uma `ReplicaSet` pode conter 50 membros, ou seja, **50 Replicas** contando com os árbitros.
+
+![Replicas](https://github.com/igorvidottof/curso-be-mean-instagram/tree/master/imgs/replicas.png)
+
+> Todas as operações de escrita são feitas no primária e replicada para os secundários. As operações de leitura também são feitas na primária.
+
+#### Importante
+**Devemos também replicar os `Shards`.**
+
+A Replica tem duas etapas:
+  * Initial Sync
+  * Replication
+
+#### Oplog
+O `oplog` (log de operações) é uma **capped collection** especial que mantém os registros de todas as operações de modificação de dados.
+
+O MongoDB aplica as operações na Replica primária e, em seguida, registra as operações no `oplog`. 
+
+Os membros secundários, então, copiam e aplicam essas operações em um processo assíncrono.
+
+#### Utilizando Replicas
+##### Primeiramente temos que criar os diretórios aos quais vamos replicar os dados.
+
+```js
+mkdir /data/rs1
+mkdir /data/rs2
+mkdir /data/rs3
+```
+
+##### Fazer o `Script` para criar os servidores para replicação.
+
+```js
+mongod --replSet replica_set --port 27017 --dbpath /data/rs1/ --logpath /data/rs1/log.txt --fork
+mongod --replSet replica_set --port 27018 --dbpath /data/rs2/ --logpath /data/rs2/log.txt --fork
+mongod --replSet replica_set --port 27019 --dbpath /data/rs3/ --logpath /data/rs3/log.txt --fork
+```
+
+> O `--logpath` e o `--fork` faz com que o log seja escrito em background num arquivo, sem retorno das operações no terminal.
+
+##### Conectar com o cliente num dos servidores
+
+```js
+mongo --port 27017
+```
+
+##### Criar um arquivo de configuração
+
+```js
+rsconf = {
+   _id: "replica_set",
+   members: [
+    {
+     _id: 0,
+     host: "127.0.0.1:27017"
+    }
+  ]
+}
+```
+
+##### Iniciar o `replica set` com esse arquivo de configuração para criar a Replica Primária
+
+```js
+rs.initiate(rsconf)
+```
+
+Com isso já aparecerá que estamos conectados na **Replica Primária**.
+
+##### Adicionar replicas
+Para adicionar replicas ao `replica set` é muito simples, temos apenas que utilizar o `rs.add()` passando como parâmetro a `string` da porta em que está o servidor de replica:
+
+```js
+rs.add("127.0.0.1:27018");
+```
+
+```js
+rs.add("127.0.0.1:27019");
+```
+
+Com isso temos duas replicas secundárias.
+
+##### Verificar o status da replica set
+
+```js
+rs.status()
+```
+
+##### Verificar os dados do oplog
+
+```js
+rs.printReplicationInfo();
+```
+
+##### Rebaixamento de Replica Primária
+Num ambiente de produção, por exemplo, que temos replicas em servidores diferentes, se o que está a Replica Primaria cai ou dá algum problema, podemos rebaixá-la, com isso o MongoDB elege outra primária automaticamente pelos árbitros.
+
+Fazemos isso com o seguinte comando:
+
+```js
+rs.stepDown()
+```
+
+#### Exercício Explain e Index [(resolvido)](https://github.com/igorvidottof/curso-be-mean-instagram/tree/master/01-modulo-mongodb/exercicios/aula-06)
