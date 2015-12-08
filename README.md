@@ -2,7 +2,7 @@
 
 ## Módulos
 
-1. MongoDB [(anotações)](https://github.com/igorvidottof/curso-be-mean-instagram/tree/master/01-modulo-mongodb)
+1. **MongoDB** [(anotações)](https://github.com/igorvidottof/curso-be-mean-instagram/tree/master/01-modulo-mongodb)
 	* [Aula 01](https://www.youtube.com/watch?v=leYxsEAL_yY)
 		* Teoria
 			* NoSQL
@@ -94,3 +94,17 @@
         * Gerenciamento de Usuários no MongoDB
             * Comandos de gerenciamento de usuários
 
+2. **Node.js** [(anotações)](https://github.com/igorvidottof/curso-be-mean-instagram/tree/master/02-modulo-nodejs)
+	* [Aula 01](https://www.youtube.com/watch?v=OgfO37F6mdg)
+		* Teoria
+			* V8
+			* Node.js
+				* Single Thread
+				* Event Loop
+				* Libuv
+				* I/O Async	
+				* Thread Pool
+				* Event Driven (Orientação à eventos)
+				* API
+			* Instalação Node.js
+			* Exercício 
