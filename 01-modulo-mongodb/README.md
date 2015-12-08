@@ -18,7 +18,7 @@
 #### Features
 * Schemaless - Sem esquemas (estruturações exatas, tabelas, campos, etc).
 * Trabalha com JSON/BSON
-* Réplica - Espelhamento dos dados
+* replica - Espelhamento dos dados
 * Sharding - Como o MongoDB trabalha com a memória RAM, se a coleção de dados for muito grande e superar a capacidade dela, essa técnica é utilizada. O sharding divide os dados em pacotes menores e coloca em outros servidores.
 * GridFs - Servidor de arquivos binários do MongoDB
 * Geolocation
@@ -1136,7 +1136,7 @@ Se for usar GridFS, utilize-o em um servidor próprio (diferente do `mongod`) pa
 ### Replica
 A Replica é um recurso muito importante que **devemos** utilizar em todos os projetos. Ela faz o espelhamento dos dados de um servidor para outro, no MongoDB uma `ReplicaSet` pode conter 50 membros, ou seja, **50 Replicas** contando com os árbitros.
 
-![Replicas](https://github.com/igorvidottof/curso-be-mean-instagram/tree/master/imgs/replicas.png)
+![Replicas](https://github.com/igorvidottof/curso-be-mean-instagram/blob/master/imgs/replicas.png)
 
 > Todas as operações de escrita são feitas no primária e replicada para os secundários. As operações de leitura também são feitas na primária.
 
@@ -1235,4 +1235,783 @@ Fazemos isso com o seguinte comando:
 rs.stepDown()
 ```
 
-#### Exercício Explain e Index [(resolvido)](https://github.com/igorvidottof/curso-be-mean-instagram/tree/master/01-modulo-mongodb/exercicios/aula-06)
+##### Exercício Explain e Index [(resolvido)](https://github.com/igorvidottof/curso-be-mean-instagram/tree/master/01-modulo-mongodb/exercicios/aula-06)
+
+## [Aula 07](https://www.youtube.com/watch?v=1ElYrkSIvII)
+### Replicas
+#### Árbitros
+Quando um servidor de replica primário é derrubado outro servidor de replica deve assumir sua posição, contudo podemos ter vários servidores secundários de replicas levantados, neste ponto que entra o *árbitro*, ele também é uma `replica set`, porém não guarda dados, apenas tem o papel de decidir qual replica deve se tornar a primária. Devemos utilizar árbitros **somente** quando temos um número par de replicas, para que então ele desempate a votação entre as replicas secundárias.
+
+###### Obs:
+> Árbitros não necessitam de hardwares dedicados
+
+##### Como usar?
+Primeiramente precisamos criar um diretório onde armazenaremos os dados de configuração do árbitro.
+
+```
+mkdir /data/arb
+```
+
+Após isso levantamos o mongod utilizando esse diretório que criamos para o árbitro
+
+```
+mongod --replSet replica_set --port 30000 --dbpath /data/arb
+```
+
+Agora só precisamos conectar na replica primária e adicionar o árbitro. Tomemos o cenário onde nossa replica primária está na porta 27017.
+
+Conectando...
+
+```
+mongod --port 27017
+```
+
+Adicionando o árbitro...
+
+```
+rs.addArb("127.0.0.1:30000");
+```
+
+Se tudo correu bem uma mensagem `"ok"` aparecerá no console. Agora vamos verificar se o árbitro realmente faz parte de nosso replica set.
+
+```js
+rs.status();
+
+//Saída
+{
+  "set": "replica_set",
+  "date": ISODate("2015-12-07T15:59:31.536Z"),
+  "myState": 1,
+  "members": [
+    {
+      "_id": 0,
+      "name": "127.0.0.1:27017",
+      "health": 1,
+      "state": 1,
+      "stateStr": "PRIMARY",
+      "uptime": 474,
+      "optime": Timestamp(1449503964, 1),
+      "optimeDate": ISODate("2015-12-07T15:59:24Z"),
+      "electionTime": Timestamp(1449503518, 1),
+      "electionDate": ISODate("2015-12-07T15:51:58Z"),
+      "configVersion": 4,
+      "self": true
+    },
+    {
+      "_id": 1,
+      "name": "127.0.0.1:27018",
+      "health": 1,
+      "state": 2,
+      "stateStr": "SECONDARY",
+      "uptime": 453,
+      "optime": Timestamp(1449503964, 1),
+      "optimeDate": ISODate("2015-12-07T15:59:24Z"),
+      "lastHeartbeat": ISODate("2015-12-07T15:59:30.489Z"),
+      "lastHeartbeatRecv": ISODate("2015-12-07T15:59:31.344Z"),
+      "pingMs": 0,
+      "configVersion": 4
+    },
+    {
+      "_id": 2,
+      "name": "127.0.0.1:27019",
+      "health": 1,
+      "state": 2,
+      "stateStr": "SECONDARY",
+      "uptime": 443,
+      "optime": Timestamp(1449503964, 1),
+      "optimeDate": ISODate("2015-12-07T15:59:24Z"),
+      "lastHeartbeat": ISODate("2015-12-07T15:59:30.489Z"),
+      "lastHeartbeatRecv": ISODate("2015-12-07T15:59:29.869Z"),
+      "pingMs": 0,
+      "configVersion": 4
+    },
+    {
+      "_id": 3,
+      "name": "127.0.0.1:30000",
+      "health": 1,
+      "state": 7,
+      "stateStr": "ARBITER",
+      "uptime": 7,
+      "lastHeartbeat": ISODate("2015-12-07T15:59:30.489Z"),
+      "lastHeartbeatRecv": ISODate("2015-12-07T15:59:30.491Z"),
+      "pingMs": 0,
+      "configVersion": 4
+    }
+  ],
+  "ok": 1
+}
+```
+
+###### There it is o/
+
+## Sharding
+Sharding é o processo de armazenamento de dados em várias máquinas(servidores), é a abordagem que o MongoDB faz para atender o crescimento dos dados. Promove a escalabilidade horizontal.
+
+#### Qual é a diferença entre escalabilidade horizontal e vertical?
+Na **vertical** o que aumenta é a capacidade do servidor, melhoras em seu hardware, quantidade de memória, processamento, já na **horizontal** o aumento é no número de servidores, distribuindo assim a carga de processamento.
+
+### Arquitetura de um Cluster com MongoDB
+Num *cluster* com MongoDB existem três serviços:
+
+#### Shards
+*Shards* armazenam dados. Cada *shard* é um replica set do MongoDB que guarda um pedaço da sua coleção.
+
+#### Config Servers
+Cada *config server* é uma instância do MongoDb que guarda os metadados(informações) sobre o cluster. Os metadados mapeiam os *chunks*(pedaços) de dados para os shards. Clusters num ambiente de produção possuem exatamente **três** Config Servers.
+
+#### Router
+O *Router* (*Query Router* ou *mongos instances*) processa e direciona as operações para os shards e então retorna os resultados para os clientes. Com isso, a aplicação não acessa diretamente os shards. Um cluster pode conter mais de um 
+query router.
+
+### Criando um Cluster
+Primeiramente devemos criar as pastas para nossos config servers e levantar o mongod com a opção `--configsvr` numa porta específica.
+
+```js
+mkdir \data\configdb
+mongod --configsvr --port 27010
+```
+
+Depois disso precisamos criar o Router utilizando o mongos, indicando o Config Server que ele acessará para ter as informações dos Shards.
+
+```js
+mongos --configdb localhost:27010 --port 27011
+```
+
+Tendo esses pontos configurados vamos criar e levantar três shards para exemplificação.
+
+Criando as pastas...
+
+```js
+mkdir /data/shard1 && mkdir /data/shard2 && mkdir /data/shard3
+```
+
+Levantando os shards em terminais diferentes
+
+**Shard 1**
+
+```js
+mongod --port 27012 --dbpath /data/shard1
+```
+
+**Shard 2**
+
+```js
+mongod --port 27013 --dbpath /data/shard2
+```
+
+**Shard 3**
+
+```js
+mongod --port 27014 --dbpath /data/shard3
+```
+
+Agora temos que conectar na porta do Router e adicionar os shards a ele.
+
+Conectando ao Router
+
+```js
+mongo --host localhost --port 27011
+```
+
+Adicionando os shards
+
+```js
+mongos> sh.addShard("localhost:27012")
+{
+  "shardAdded": "shard0000",
+  "ok": 1
+}
+[mongos] test> sh.addShard("localhost:27013")
+{
+  "shardAdded": "shard0001",
+  "ok": 1
+}
+[mongos] test> sh.addShard("localhost:27014")
+{
+  "shardAdded": "shard0002",
+  "ok": 1
+}
+```
+
+Depois disso vamos especificar qual *database* servirá de base para o shard com a função `sh.enableSharding()`
+
+```js
+[mongos] test> sh.enableSharding("be-mean")
+{
+  "ok": 1
+}
+```
+
+E logo após especificamos qual coleção será "shardeada" com a função `sh.shardCollection()`
+
+```js
+[mongos] test> sh.shardCollection( "be-mean.notas", {"_id": 1} )
+{
+  "collectionsharded": "be-mean.notas",
+  "ok": 1
+}
+
+```
+
+> A sintaxe desse comando é sh.shardCollection( "<database>.<collection>, shard-key-pattern" ), onde o shard-key se refere ao campo de separação dos documentos, tem a mesma função da key de uma index.
+
+Tudo pronto, agora vamos popular essa collection, lembrando que devemos enviar os dados sempre para o Router para ele decidir o que fazer.
+
+```js
+for ( i = 1; i < 100000; i++ ) {
+  db.notas.insert(
+        {
+            tipo: "prova",
+            nota : Math.random() * 100,
+            estudante_id: i, 
+            active: true, 
+            date_created: Date.now(),
+            escola: "Webschool", 
+            país: "Brasil", 
+            rg: i*3 
+        }
+  );
+}
+```
+
+#### Observação
+O tamanho padrão do chunk de cada shard é **64MB**, logo a coleção precisa ser maior que 64MB para que ocorra a divisão dos seus dados pela *shard-key*.
+
+Dependendo do número de shards do seu cluster o MongoDb pode esperar que tenha pelo menos 10 chunks para disparar a migração.
+
+Podemos utilizar o comando `db.printShardingStatus()` para ver todos os chunks presentes no servidor.
+
+
+## Gerenciamento de Usuários no MongoDB
+O MongoDb trabalha com usuários definindo quais seus papéis/funções (roles) no sistema.
+
+Ele concede acesso a dados e comandos através de autorização baseada em funções(roles) e fornece papéis integrados que fornecem os diferentes níveis de acesso. Além disso, podemos criar papéis definidos pelo usuário.
+
+A função concede privilégios para executar conjuntos de ações sobre os recursos definidos. Um papel é aplicado ao banco de dados no qual ele está definido e pode conceder acesso a um nível de coleção.
+
+Toda informação de autenticação e autorização de usuários fica na coleção **system.users** na database **admin**. 
+
+### Comandos de gerenciamento de usuários
+
+#### createUser
+Cria um usuário no banco de dados onde o comando for executado.
+
+##### Acesso Requerido
+
+Para criar um novo usuário em um banco de dados, devemos ter a ação createUser. Para conceder funções a um usuário, devemos ter a ação *grantRole* no banco de dados onde existe esse papel.
+
+##### Sintaxe
+
+```js
+{ createUser: "<name>",
+  pwd: "<cleartext password>",
+  customData: { <any information> },
+  roles: [
+    { role: "<role>", db: "<database>" } | "<role>",
+    ...
+  ],
+  digestPassword: boolean, //opcional
+  writeConcern: { <write concern> }
+}
+```
+
+
+##### Exemplo
+Criando um usuário administrador
+
+Para trabalhar com usuários precisamos primeiramente acessar a db **admin**
+
+```js
+use admin
+```
+
+Agora podemos rodar o comando `createUser()`
+
+```js
+db.createUser(
+   {
+      user: "IgorAdmin",
+      pwd: "admin123",
+      roles: [ { role: "userAdminAnyDatabase", db: "admin" } ]
+   }
+)
+
+//Saída
+Successfully added user: {
+  "user": "IgorAdmin",
+  "roles": [
+    {
+      "role": "userAdminAnyDatabase",
+      "db": "admin"
+    }
+  ]
+}
+```
+
+#### updateUser
+Atualiza o perfil do usuário no banco de dados no qual executamos o comando. Este comando sobrescreve os dados antigos com os dados passados para ele.
+
+Para atualizar um usuário, precisamos especificar o campo *updateUser* e pelo menos um outro campo, exceto *writeConcern*.
+
+##### Acesso Requerido
+
+Devemos ter o acesso, que inclui a ação *revokeRole* em todos os bancos, a fim de atualizar os papéis de um usuário.
+
+Se quisermos adicionar uma função a um usuário devemos ter a ação *grantRole* no banco de dados.
+
+Para alterar o campo *pwd* ou *customData* de outro usuário, devemos ter as ações *changeAnyPassword* e *changeAnyCustomData*.
+
+Para modificar nossos próprios dados de senha e customData, devemos ter os privilégios *changeOwnPassword* e *changeOwnCustomData*.
+
+##### Sintaxe
+
+```js
+{ updateUser: "<username>",
+  pwd: "<cleartext password>",
+  customData: { <any information> },
+  roles: [
+    { role: "<role>", db: "<database>" } | "<role>",
+    ...
+  ],
+  writeConcern: { <write concern> }
+}
+```
+
+##### Exemplo
+Vamos adicionar a propriedade customData que o usuário "IgorAdmin" não possuía antes.
+
+```js
+db.runCommand(
+    {
+        updateUser: "IgorAdmin",
+        customData: { teacher: false }
+    }
+)
+
+//Saída
+{
+  "ok": 1
+}
+```
+
+> Como no exemplo, vimos que podemos usar também a função `runCommand()` para manipular as operações de gerenciamento de usuários, basta passar o primeiro campo com o nome do comando que deseja executar, neste caso `updateUser`
+
+###### Warning!
+Como dito acima o updateUser substitui os dados anteriormente definidos pelos novos dados, sem nenhum consentimento :anguished:
+
+Sabendo disso não devemos utilizar essa função para alterar o array de roles. Para isso há funções específicas como  *grantRolesToUser* para adicionar roles ou *revokeRolesFromUser* para remover. 
+
+#### dropUser
+Remove o usuário da database onde é executado.
+
+##### Acesso Requerido
+
+Devemos possuir a ação *dropUser* em um banco de dados para remover um usuário dele.
+
+##### Sintaxe
+
+```js
+{
+  dropUser: "<user>",
+  writeConcern: { <write concern> }
+}
+```
+
+##### Exemplo
+
+```js
+db.runCommand(
+    {
+         dropUser: "IgorAdmin",
+         writeConcern: { w: "majority", wtimeout: 5000 }
+    }
+)
+
+//Saída
+{
+  "ok": 1
+}
+```
+
+#### dropAllUsersFromDatabase
+Remove todos os usuários do banco de dados no qual você executa o comando.
+
+##### Acesso Requerido
+Devemos possuir a ação *dropUser* em um banco de dados para remover um usuário dele.
+
+##### Sintaxe
+
+```js
+{ dropAllUsersFromDatabase: 1,
+  writeConcern: { <write concern> }
+}
+```
+
+> O 1 indica o valor booleano true
+
+##### Exemplo
+
+```js
+db.runCommand( 
+    {
+        dropAllUsersFromDatabase: 1,
+        writeConcern: { w: "majority" } 
+    } 
+)
+
+//Saída
+{
+  "n": 1,
+  "ok": 1
+}
+```
+
+> n é o número de usuários deletados
+
+#### grantRolesToUser
+Adiciona papéis a um usuário.
+
+##### Acesso Requerido
+Devemos ter a ação *grantRole* em um banco de dados para adicionar um papel a um usuário do mesmo.
+
+##### Sintaxe
+
+```
+{ grantRolesToUser: "<user>",
+  roles: [ <roles> ],
+  writeConcern: { <write concern> }
+}
+```
+
+##### Exemplo
+
+```js
+db.runCommand( { grantRolesToUser: "OutroUser",
+  roles: [
+    { role: "read", db: "be-mean"},
+    "readWrite"
+  ],
+  writeConcern: { w: "majority" , wtimeout: 2000 }
+ })
+ ```
+
+#### revokeRolesFromUser
+Remove uma ou mais funções de um usuário no banco de dados. 
+
+##### Acesso Requerido
+
+Devemos ter a ação *revokeRole* em um banco de dados para remover um ou mais papéis de um usuário do mesmo.
+
+##### Sintaxe
+
+```js
+{ revokeRolesFromUser: "<user>",
+  roles: [
+    { role: "<role>", db: "<database>" } | "<role>",
+    ...
+  ],
+  writeConcern: { <write concern> }
+}
+```
+
+##### Exemplo
+
+```js
+ db.runCommand( { revokeRolesFromUser: "OutroUser",
+  roles: [
+          { role: "read", db: "be-mean" },
+          "readWrite"
+  ],
+  writeConcern: { w: "majority" }
+ })
+```
+
+#### usersInfo
+Retorna informações sobre um ou mais usuários.
+
+##### Sintaxe
+
+```js
+{ usersInfo: { user: "<name>", db: "<db>" },
+  showCredentials: <Boolean>,
+  showPrivileges: <Boolean>
+}
+```
+
+##### Exemplo
+Se quisermos verificar um usuário específico, podemos buscá-lo por seu nome de usuário.
+
+```js
+db.runCommand({
+    usersInfo: { user: "IgorAdmin", db: "admin" }
+})
+
+//Saída
+{
+  "users": [
+    {
+      "_id": "admin.IgorAdmin",
+      "user": "IgorAdmin",
+      "db": "admin",
+      "customData": {
+        "student": true
+      },
+      "roles": [
+        {
+          "role": "userAdminAnyDatabase",
+          "db": "admin"
+        }
+      ]
+    }
+  ],
+  "ok": 1
+}
+```
+
+Se quisermos ver as credenciais deste usuário podemos acrescentar o campo `showCredentials: true`
+
+```js
+db.runCommand({
+    usersInfo: { user: "IgorAdmin", db: "admin" },
+    showCredentials: true
+})
+
+//Saída
+{
+  "users": [
+    {
+      "_id": "admin.IgorAdmin",
+      "user": "IgorAdmin",
+      "db": "admin",
+      "credentials": {
+        "SCRAM-SHA-1": {
+          "iterationCount": 10000,
+          "salt": "Vse5GCluCmfRUFFxIPvSPA==",
+          "storedKey": "vK9P3PDfQi41vCCu8ibhLYauQLM=",
+          "serverKey": "+bpwOL7iz3Ht71K6NSHr6YWW9fc="
+        }
+      },
+      "customData": {
+        "student": true
+      },
+      "roles": [
+        {
+          "role": "userAdminAnyDatabase",
+          "db": "admin"
+        }
+      ]
+    }
+  ],
+  "ok": 1
+}
+```
+
+Ainda podemos obter também as informações dos privilégios(ações) que o usuário possui, passando também o campo `show Privileges: true`
+
+```js
+db.runCommand({
+    usersInfo: { user: "IgorAdmin", db: "admin" },
+    showCredentials: true,
+    showPrivileges: true
+})
+
+//Saída
+{
+  "users": [
+    {
+      "_id": "admin.IgorAdmin",
+      "user": "IgorAdmin",
+      "db": "admin",
+      "credentials": {
+        "SCRAM-SHA-1": {
+          "iterationCount": 10000,
+          "salt": "Vse5GCluCmfRUFFxIPvSPA==",
+          "storedKey": "vK9P3PDfQi41vCCu8ibhLYauQLM=",
+          "serverKey": "+bpwOL7iz3Ht71K6NSHr6YWW9fc="
+        }
+      },
+      "customData": {
+        "student": true
+      },
+      "roles": [
+        {
+          "role": "userAdminAnyDatabase",
+          "db": "admin"
+        }
+      ],
+      "inheritedRoles": [
+        {
+          "role": "userAdminAnyDatabase",
+          "db": "admin"
+        }
+      ],
+      "inheritedPrivileges": [
+        {
+          "resource": {
+            "db": "",
+            "collection": ""
+          },
+          "actions": [
+            "changeCustomData",
+            "changePassword",
+            "createRole",
+            "createUser",
+            "dropRole",
+            "dropUser",
+            "grantRole",
+            "revokeRole",
+            "viewRole",
+            "viewUser"
+          ]
+        },
+        {
+          "resource": {
+            "cluster": true
+          },
+          "actions": [
+            "authSchemaUpgrade",
+            "invalidateUserCache",
+            "listDatabases"
+          ]
+        },
+        {
+          "resource": {
+            "db": "",
+            "collection": "system.users"
+          },
+          "actions": [
+            "collStats",
+            "dbHash",
+            "dbStats",
+            "find",
+            "killCursors",
+            "listCollections",
+            "listIndexes",
+            "planCacheRead"
+          ]
+        },
+        {
+          "resource": {
+            "db": "admin",
+            "collection": "system.users"
+          },
+          "actions": [
+            "collStats",
+            "createIndex",
+            "dbHash",
+            "dbStats",
+            "dropIndex",
+            "find",
+            "killCursors",
+            "listCollections",
+            "listIndexes",
+            "planCacheRead"
+          ]
+        },
+        {
+          "resource": {
+            "db": "admin",
+            "collection": "system.roles"
+          },
+          "actions": [
+            "collStats",
+            "createIndex",
+            "dbHash",
+            "dbStats",
+            "dropIndex",
+            "find",
+            "killCursors",
+            "listCollections",
+            "listIndexes",
+            "planCacheRead"
+          ]
+        },
+        {
+          "resource": {
+            "db": "admin",
+            "collection": "system.version"
+          },
+          "actions": [
+            "collStats",
+            "dbHash",
+            "dbStats",
+            "find",
+            "killCursors",
+            "listCollections",
+            "listIndexes",
+            "planCacheRead"
+          ]
+        },
+        {
+          "resource": {
+            "db": "admin",
+            "collection": "system.new_users"
+          },
+          "actions": [
+            "collStats",
+            "dbHash",
+            "dbStats",
+            "find",
+            "killCursors",
+            "listCollections",
+            "listIndexes",
+            "planCacheRead"
+          ]
+        },
+        {
+          "resource": {
+            "db": "admin",
+            "collection": "system.backup_users"
+          },
+          "actions": [
+            "collStats",
+            "dbHash",
+            "dbStats",
+            "find",
+            "killCursors",
+            "listCollections",
+            "listIndexes",
+            "planCacheRead"
+          ]
+        }
+      ]
+    }
+  ],
+  "ok": 1
+}
+```
+
+##### Listando mais de um usuário
+Para listar mais de um usuário por vez basta que passemo-nos num array no campo `usersInfo`.
+
+```js
+db.runCommand({
+    usersInfo: [ 
+        { user: "FirstUser", db: "admin" }, 
+        { user: "SecondUser", db: "admin" }, 
+        { user: "ThirdUser", db: "another-db" } 
+    ]
+})
+```
+
+##### Listando todos os usuários
+Para listar todos os usuários passamos o valor 1 (*true*) para o campo usersInfo.
+
+```js
+db.runCommand( { usersInfo: 1 } )
+```
+
+### Conectar autenticando
+Primeiramente levantamos o mongod com a opção `--auth`
+
+```js
+mongod --auth --port 27017
+```
+
+Depois conectamos ao servidor passando as usuário e senha
+
+```js
+mongo --port 27017 -u "<user>" -p "<password>" --authenticationDatabase "<db>"
+```
+
+

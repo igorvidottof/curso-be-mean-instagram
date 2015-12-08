@@ -84,6 +84,13 @@
 		* Replica
 		* Exercício [(resolvido)](https://github.com/igorvidottof/curso-be-mean-instagram/tree/master/01-modulo-mongodb/exercicios/aula-06)
 
-
-
+    * [Aula 07](https://www.youtube.com/watch?v=1ElYrkSIvII)
+        * Replicas
+            * Árbitros
+        * Sharding
+            * Shards
+            * Config Servers
+            * Router
+        * Gerenciamento de Usuários no MongoDB
+            * Comandos de gerenciamento de usuários
 
