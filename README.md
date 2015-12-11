@@ -107,4 +107,12 @@
 				* Event Driven (Orientação à eventos)
 				* API
 			* Instalação Node.js
-			* Exercício 
+			* Exercício [(resolvido)](https://github.com/igorvidottof/curso-be-mean-instagram/tree/master/02-modulo-nodejs/exercicios/aula-01)
+
+		* [Aula 02](https://www.youtube.com/watch?v=mDtNcosGgiU)
+			* HTTP
+			* Status Code
+			* createServer
+			* Rotas
+			* QueryString
+			* Exercício

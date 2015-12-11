@@ -43,5 +43,231 @@ O Node.js é orientado à eventos, o que simplifica a programação assíncrona.
 * Extensivamante Modularizada (possui diversos módulos)
 * Extensivamente Assíncrona
 
+## [Aula 02](https://www.youtube.com/watch?v=mDtNcosGgiU)
 
+### HTTP
+O módulo http é o principal módulo de nossas aplicações pois é com ele que criamos um servidor web para fornecer nossos sistemas.
+
+Ele trabalha com diversas funcionalidades do protocolo HTTP.
+
+Esse módulo é nativo, com isso não necessita de instalação.
+
+Para utilizarmos ele temos que importá-lo para nosso código:
+
+```js
+require('http');
+```
+
+Cada requisição que fazemos possui *cabeçalhos* com informações que dizem o que essa requisição faz.
+
+O protocolo HTTP possui um conjunto de *métodos/verbos* que o cliente pode invocar, tais como GET, HEAD, POST, PUT, DELETE, TRACE, OPTIONS, CONNECT e PATCH.
+
+#### Status Codes
+São os códigos de retorno do HTTP. Eles são divididos 5 grupos:
+
+* 1XX Informacional
+* 2XX Sucesso
+* 3XX Redirecionamento
+* 4XX Erro do Cliente
+* 5XX Erro do Servidor 
+
+### createServer
+Para iniciarmos um servidor HTTP utilizaremos a função createServer que recebe uma função com 2 parâmetros, **request** e **response**.
+
+Exemplo:
+
+```js
+var http = require('http');
+
+http.createServer(function(request, response){
+    response.writeHead(200, {'Content-Type': 'text/plain'});
+    response.write('Be MEAN');
+    response.end();
+}).listen(3000, function(){
+    console.log('Servidor rodando em localhost:3000');
+});
+```
+
+No `writeHead` passamos o **Status Code** e um objeto com o **tipo do documento**.
+
+Outra forma de fazer seria separando as funções:
+
+```js
+var http = require('http');
+
+var server = http.createServer(function(request, response){
+    response.writeHead(200, {'Content-Type': 'text/plain'});
+    response.write('Be MEAN');
+    response.end();
+});
+
+server.listen(3000, function(){
+console.log('Executando Servidor HTTP');
+});
+```
+
+Neste exemplo demos uma resposta de escrita com texto normal, para mostrar uma resposta com **html** devemos mudar o **Content-Type** para **text/html**.
+
+```js
+var http = require('http');
+
+http.createServer(function(request, response){
+    response.writeHead(200, {'Content-Type': 'text/html'});
+    response.write('<h1>Be MEAN</h1>');
+    response.end();
+}).listen(3000, function(){
+    console.log('Servidor rodando em localhost:3000');
+});
+```
+
+Agora vamos criar um documento html e fazer a leitura dele, após isso enviar a resposta com o conteúdo seu conteúdo.
+
+```js
+var http = require('http')
+    , fs = require('fs')
+    , index = fs.readFileSync('index.html');
+
+http.createServer(function(request, response){
+    response.writeHead(200, {'Content-Type': 'text/html'});
+    response.end(index);
+}).listen(3000, function(){
+    console.log('Servidor rodando em localhost:3000');
+});
+```
+
+### Rotas
+Criando rotas para acesso ao sistema web. A primeira rota (`api/v1`) mostrará informações sobre nossa API.
+
+Primeiramente criamos um JSON de resposta que o servidor entregará ao *client*.
+
+```js
+const JSON = {
+      version 1.0
+    , name: 'Be MEAN'
+    , created_at: Date.now()
+};
+```
+
+Depois o adicionamos ao nosso script *base-server.js* que irá servir como uma base para nosso servidor HTTP.
+
+```js
+'use strict';
+
+const http = require('http')
+    , JSON = {
+          version: 1.0
+        , name: 'Be MEAN'
+        , created_at: Date.now()
+    };
+
+http.createServer(function(request, response){
+    response.writeHead(200, {'Content-Type': 'application/json'});
+    response.end();
+}).listen(3000, function(){
+    console.log('Servidor rodando em localhost: 3000');
+});
+```
+
+Antes de continuarmos vamos instalar algumas ferramentas que ajudarão na execução de algumas tarefas, são elas o [nodemon](http://nodemon.io/) e a extensão do Chrome [Postman](https://chrome.google.com/webstore/detail/postman/fhbjgbiflinjbdggehcddcbncdddomop?hl=en-US)
+
+> O nodemon fica "observando" as alterações que são feitas no código e faz o restart do server automaticamente.
+
+Agora vamos criar o script completo para levantar o servidor e bater em nossa API.
+
+```js
+'use strict';
+
+var date = (new Date()).toJSON();
+
+const http = require('http')
+    , SUCESS = 
+        { version: '1.0'
+        , name: 'Be MEAN'
+        , returned_at: date
+        }
+    , ERROR = 
+        { message: 'Página não encontrada' }
+    ;
+
+http.createServer(function(req, res) {
+    if(req.url === '/api/v1') {
+        res.writeHead(200, {'Content-Type': 'application/json; charset=utf-8'});
+        res.write(JSON.stringify(SUCESS));
+    }
+    else {
+        res.writeHead(404, {'Content-Type': 'application/json; charset=utf-8'});
+        res.write(JSON.stringify(ERROR)); //res.write só aceita string e buffer
+    }
+    res.end();
+}).listen(3000, function(){
+    console.log('Servidor rodando em localhost:3000');
+});
+```
+
+Levantando o server:
+
+```js
+nodemon server.js
+```
+
+Acessamos a porta que está rodando o servidor pelo navegador
+
+```js
+localhost:3000
+```
+
+Logo receberemos o JSON de **ERROR** que configuramos
+
+```
+{ message: 'Página não encontrada' }
+```
+
+Vamos então encaminhar a requisição para a rota de nossa API
+
+```js
+localhost:3000/api/v1
+```
+
+Agora temos o JSON de **SUCCESS**
+
+```
+{"version":"1.0","name":"Be MEAN","returned_at":"2015-12-10T15:11:25.420Z"}
+```
+
+> Podemos também testar nosso servidor e rotas pelo Postman, que proporciona uma visão bem mais completa do que o navegador.
+
+### QueryString
+São as variáveis e valores que são obtidos através de formulários ou requisições do usuário e que são enviados à **url**, como `?name=Igor`, por exemplo. No Node.js, existe um módulo nativo chamado `url`, que é responsável por fazer *parser* e formatação de urls. Abaixo segue um exemplo de como capturar *query strings* da url.
+
+```js
+'use strict';
+
+let http = require('http')
+  , url = require('url')     
+  ;
+
+http.createServer(function(request, response){
+  var result = url.parse(request.url, true); 
+
+  response.writeHead(200, {'Content-Type': 'text/html'});
+  response.write('<html><body>');
+  response.write('<h1>Be-MEAN</h1>');
+  response.write('<h2>Query String</h2>');
+  response.write('<ul>');
+
+  for(var key in result.query) {
+      response.write('<li>' + key +':' + result.query[key] + '</li>');
+  }
+
+  response.write('</ul>');
+  response.write('</body></html>');
+
+  response.end();
+
+}).listen(3000, function(){
+  console.log('Servidor rodando em localhost:3000');
+});
+```
+
+> A função url.parse() retorna um objeto com vários atributos da url, como href, protocol, host, auth, hostname, port, pathname, search, path, **query** e hash.
 
