@@ -115,4 +115,4 @@
 			* createServer
 			* Rotas
 			* QueryString
-			* Exercício
+			* Exercício [(resolvido)](https://github.com/igorvidottof/curso-be-mean-instagram/tree/master/02-modulo-nodejs/exercicios/aula-02)
