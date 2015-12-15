@@ -1,4 +1,4 @@
-# Anotações Módulo Nodejs
+# Anotações Módulo Node.js
 
 ## [Aula 01](https://www.youtube.com/watch?v=OgfO37F6mdg)
 
@@ -142,7 +142,7 @@ Primeiramente criamos um JSON de resposta que o servidor entregará ao *client*.
 
 ```js
 const JSON = {
-      version 1.0
+      version: '1.0'
     , name: 'Be MEAN'
     , created_at: Date.now()
 };
@@ -270,4 +270,252 @@ http.createServer(function(request, response){
 ```
 
 > A função url.parse() retorna um objeto com vários atributos da url, como href, protocol, host, auth, hostname, port, pathname, search, path, **query** e hash.
+
+## [Aula 03](https://www.youtube.com/watch?v=TpNofR3Axsk)
+
+### GET
+Vamos utilizar a função `get` do módulo `http` para requisitar informações de algumas APIs.
+
+Modelo:
+
+```js
+http.get(
+  { hostname: 'localhost'
+  , port: 80
+  , path: '/'
+  , agent: false // criar um novo agente(client) apenas para este pedido
+  } //JSON de configuração
+  , 
+    function (res) {
+      // Função de resposta
+    }
+);
+```
+
+Criando o JSON de configuração e a função de callback:
+
+File: [http-get-localhost-querystring.js](https://github.com/igorvidottof/curso-be-mean-instagram/blob/master/02-modulo-nodejs/arquivos/aula-03/http-get-localhost-querystring.js)
+
+```js
+'use strict';
+
+const http = require('http');
+
+http.get(
+  { hostname: 'localhost'
+  , path: '/user?name=Suissa&teacher=true&age=31'
+  , port: 3000
+  , agent: false
+  }
+  , 
+    (response) => {
+      let body = '';
+
+      console.log('STATUS: ' + response.statusCode);
+      console.log('HEADERS: ' + JSON.stringify(response.headers));
+      
+      // cada valor recebido pelo evento data é armazenado na variável data
+      response.on('data', function(data){
+        body += data; 
+      });
+      
+      // quando não há mais valores para serem recebidos, retorna a resposta
+      response.on('end', function(){
+        console.log('Resposta: ', body);
+      });
+    }
+);
+```
+
+> *'data'* e *'end'* são eventos de *response*. Isso acontece porque ele é uma instância do [http.IncomingMessage](https://nodejs.org/api/http.html#http_http_incomingmessage).
+
+> Um objeto *IncomingMessage* é criado por http.Server ou http.ClientRequest e passado como o primeiro argumento para o request e response, respectivamente. Ele pode ser usado para acessar resposta de status, os cabeçalhos e os dados em si.
+
+O *IncomingMessage* implementa a interface de [Readable Stream](https://nodejs.org/api/stream.html#stream_class_stream_readable) que nos dá alguns eventos importantes, como:
+
+* **close**: evento emitido quando qualquer tipo de Stream foi fechada;
+* **data**: evento que recebe os dados da Stream;
+* **end**: evento emitido quando não há mais dados para ler;
+* **error**: evento emitido quando acontecer algum erro.
+
+Vamos levantar o servidor para que possamos testar a requisição com o `http.get`
+
+File: [hello-querystring.js](https://github.com/igorvidottof/curso-be-mean-instagram/blob/master/02-modulo-nodejs/arquivos/aula-03/hello-querystring.js)
+
+```js
+nodemon hello-querystring.js
+```
+
+Por fim vamos executar o arquivo que criamos acima para requisitar os dados no servidor que acabamos de levantar.
+
+File: [http-get-localhost-querystring.js](https://github.com/igorvidottof/curso-be-mean-instagram/blob/master/02-modulo-nodejs/arquivos/aula-03/http-get-localhost-querystring.js)
+
+```js
+node http-get-localhost-querystring.js
+
+// Saída
+STATUS: 200
+HEADERS: {"content-type":"text/html","date":"Mon, 14 Dec 2015 19:41:38 GMT","connection":"close","transfer-encoding":"chunked"}
+Resposta:  <html><body><h1>Be-MEAN</h1><h2>Query String</h2><ul><li>name:Suissa</li><li>teacher:true</li><li>age:31</li></ul></body></html>
+```
+
+### request
+O *request* é um método do módulo `http` que faz qualquer tipo de requisição HTTP.
+
+Para fazermos uma requisição então criamos primeiro o JSON de configuração com o `host` e o `path` da API que vamos acessar, a função de *callback* que enviará a resposta de nossa requisição, a função `http.request()`, que recebe o JSON de configuração e a função de *callback*, uma função para escutar o evento `error` e por último a função `req.end()` para finalizar a requisição.
+
+File: [http-request.js](https://github.com/igorvidottof/curso-be-mean-instagram/blob/master/02-modulo-nodejs/arquivos/aula-03/http-request.js)
+
+```js
+'use strict';
+
+const http = require('http');
+
+const options = { 
+  host: 'api.redtube.com'
+, path: '/?data=redtube.Videos.searchVideos&search=Sasha%20Gray'
+};
+
+function callback(res){
+  console.log('STATUS: ' + res.statusCode);
+  console.log('HEADERS: ' + JSON.stringify(res.headers));
+
+  let data = '';
+
+  res.setEncoding('utf8'); 
+
+  res.on('data', (dados) => {
+    data += dados;
+  });
+
+  res.on('end', () => {
+    console.log('Dados recuperados: ' + data);
+  });
+}
+
+const req = http.request(options, callback);
+
+req.on('error', (e) => {
+  console.log('Deu pra acessar não safado\n ERRO: ' + e.message);
+});
+
+req.end();
+```
+
+### POST
+Operação *Create* do **CRUD**.  
+Cria instâncias em determinada API. Como exemplo faremos uma requisição na [API](http://webschool-io.herokuapp.com/) do curso.
+
+File: [http-request-post.js](https://github.com/igorvidottof/curso-be-mean-instagram/blob/master/02-modulo-nodejs/arquivos/aula-03/http-request-post.js)
+
+```js
+'use strict';
+
+const http = require('http')
+    , querystring = require('querystring')
+    , postData = querystring.stringify({
+        name: 'Igor Vidotto'
+      , type: 'aluno'
+      })
+    , options = {
+        host: 'webschool-io.herokuapp.com'
+      , method: 'POST'
+      , path: '/api/pokemons'
+      , headers: {
+          'Content-Type': 'application/x-www-form-urlencoded' // indica a forma que a string é enviada, neste caso querystring
+        , 'Content-Length': postData.length // devemos indicar o tamanho da informação, cada caracter representa 1 byte
+        }
+      }
+    ;
+
+function callback(res){
+  console.log('STATUS: ' + res.statusCode);
+  console.log('HEADERS: ' + JSON.stringify(res.headers));
+
+  let data = '';
+
+  res.setEncoding('utf8');
+
+  res.on('data', (dados) => {
+    data += dados;
+  });
+
+  res.on('end', () => {
+    console.log('Dados finalizados: ' + data);
+  });
+} 
+
+const req = http.request(options, callback);
+
+req.on('error', (e) => {
+  console.log('Erro ' + e.message);
+});
+
+req.write(postData); // Create
+req.end();
+
+//Saída console
+STATUS: 201 // Created
+HEADERS: {"server":"Cowboy","connection":"close","x-powered-by":"Express","access-control-allow-origin":"*","content-type":"application/json; charset=utf-8","content-length":"79","etag":"W/\"4f-ERrKXAlSys/Kl30LBjvRZA\"","date":"Mon, 14 Dec 2015 23:34:42 GMT","via":"1.1 vegur"}
+Dados finalizados: {"__v":0,"name":"Igor Vidotto","type":"aluno","_id":"566f5212e3ce061100657d5f"}
+```
+
+### PUT
+Operação *Update* do **CRUD**.  
+Atualiza instâncias em determinada API. Como exemplo faremos uma requisição na [API](http://webschool-io.herokuapp.com/) do curso.
+
+Para fazermos a operação de *Update* usamos o mesmo modelo acima, alterando apenas o `method` para **PUT** e na path adicionamos o `id` do documento que queremos alterar.
+
+File: [http-request-post.js](https://github.com/igorvidottof/curso-be-mean-instagram/blob/master/02-modulo-nodejs/arquivos/aula-03/http-request-put.js)
+
+```js
+'use strict';
+
+const http = require('http')
+    , querystring = require('querystring')
+    , postData = querystring.stringify({
+        name: 'Igor Vidotto Felipe'
+      })
+    , options = {
+        host: 'webschool-io.herokuapp.com'
+      , method: 'PUT' 
+      , path: '/api/pokemons/566f5212e3ce061100657d5f'
+      , headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        , 'Content-Length': postData.length
+        }
+      }
+    ;
+
+function callback(res){
+  console.log('STATUS: ' + res.statusCode);
+  console.log('HEADERS: ' + JSON.stringify(res.headers));
+
+  let data = '';
+
+  res.setEncoding('utf8');
+
+  res.on('data', (dados) => {
+    data += dados;
+  });
+
+  res.on('end', () => {
+    console.log('Dados finalizados: ' + data);
+  });
+} 
+
+const req = http.request(options, callback);
+
+req.on('error', (e) => {
+  console.log('Erro ' + e.message);
+});
+
+req.write(postData); // Update
+req.end();
+
+//Saída console
+STATUS: 202 // Accepted
+HEADERS: {"server":"Cowboy","connection":"close","x-powered-by":"Express","access-control-allow-origin":"*","content-type":"application/json; charset=utf-8","content-length":"108","etag":"W/\"6c-AJs7wkR3BNHbb8h4g+2cew\"","date":"Mon, 14 Dec 2015 23:52:06 GMT","via":"1.1 vegur"}
+Dados finalizados: {"data":{"ok":1,"nModified":1,"n":1,"lastOp":"6228291530885431297","electionId":"565e25d106dca622271891c4"}}
+```
 

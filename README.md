@@ -116,3 +116,10 @@
 			* Rotas
 			* QueryString
 			* Exercício [(resolvido)](https://github.com/igorvidottof/curso-be-mean-instagram/tree/master/02-modulo-nodejs/exercicios/aula-02)
+
+		* [Aula 03](https://www.youtube.com/watch?v=TpNofR3Axsk)
+			* GET
+			* request
+			* POST
+			* PUT
+			* Exercício
